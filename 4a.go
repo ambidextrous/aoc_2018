@@ -235,6 +235,8 @@ type event struct {
 	start time.Time
 	rawString string
 	isoTimeString string
+	kind string
+	guardId int
 }
 
 func getIsoStringFromRawString(raw string) string {
@@ -251,21 +253,99 @@ func createEvents(rawStrings []string) []event {
 	events := make([]event, 0)
 	for _, s := range rawStrings {
 		isoTimeString := getIsoStringFromRawString(s)
-		fmt.Printf("isoTimeString = %s\n", isoTimeString)
+		//fmt.Printf("isoTimeString = %s\n", isoTimeString)
 		t, err := time.Parse(time.RFC3339, isoTimeString)
 		check(err)
-		fmt.Printf("t = %s\n", t.String())
-		e := event{start: t, rawString: s, isoTimeString: isoTimeString}
+		//fmt.Printf("t = %s\n", t.String())
+		kind := ""
+		guardId := 0
+		if strings.Contains(s, "begins shift") {
+			kind = "arrives"
+			stringArray1 := strings.Split(s, "#")
+			stringArray2 := strings.Split(stringArray1[1], " ")
+			guardId, err = strconv.Atoi(stringArray2[0])
+			check(err)
+		} else if strings.Contains(s, "falls asleep") {
+			kind = "fallsAsleep"
+		} else if strings.Contains(s, "wakes up") {
+			kind = "wakesUp"
+		} else {
+			panic(s)
+		}
+		e := event{start: t, rawString: s, isoTimeString: isoTimeString, kind: kind, guardId: guardId}
+		fmt.Println(e)
 		events = append(events, e)
 	}
 	return events
 }
 
-//func sortByTime(events []event) []event {
-//	sort.Slice(events, func(i, j int) bool { return events[i].start.Before(events[j].start)})
-//}
-
 type timeSlice []event
+
+type guard []watchPeriod
+
+func generateWatchPeriods(events []event) map[int][]watchPeriod {
+	endTime := events[len(events)-1].start.Add(time.Hour * 2)
+	events = append(events, event{start: endTime})
+	watchPeriods := make(map[int][]watchPeriod)
+	currentTime := events[0].start
+	hr, min, _ := currentTime.Clock()
+	currentTime = currentTime.Add(time.Hour * -2)
+	currentGuardId := events[0].guardId
+	currentWatchPeriod := watchPeriod{}
+	guardPresent := false
+	guardAsleep := false
+	currentlyInGuardPeriod := false
+	currentEvent := events[0]
+	nextEvent := events[1]
+	for i := 0; i < len(events)-1; i++ {
+		currentEvent = events[i]
+		if currentEvent.guardId > 0 {
+			currentGuardId = events[i].guardId
+		}
+		nextEvent = events[i+1]
+		if currentEvent.kind == "fallsAsleep" {
+			guardAsleep = true
+		} else if currentEvent.kind == "wakesUp" {
+			guardAsleep = false
+		} else if currentEvent.kind == "arrives" {
+			guardPresent = true
+			guardAsleep = false
+		} else {
+			panic(currentEvent.kind)
+		}
+		for currentTime.Before(nextEvent.start) {
+			fmt.Println(currentTime.String())
+			if currentlyInGuardPeriod {
+				fmt.Printf("guardAsleep = %t\n", guardAsleep)
+				fmt.Printf("guardPresent = %t\n", guardPresent)
+				fmt.Printf("currentlyInGuardPeriod = %t\n", currentlyInGuardPeriod)
+				fmt.Println(currentWatchPeriod)
+			}
+			hr, min, _ = currentTime.Clock()
+			if hr == 0 && min == 0 {
+				currentWatchPeriod = watchPeriod{}
+				currentlyInGuardPeriod = true
+			} else if hr == 1 && min == 0 {
+				guardPresent = false
+				currentlyInGuardPeriod = false
+				guardAsleep = false
+				if _, ok := watchPeriods[currentGuardId]; ok {
+					watchPeriods[currentGuardId] = append(watchPeriods[currentGuardId], currentWatchPeriod)
+				} else {
+					watchPeriods[currentGuardId] = make([]watchPeriod, 0)
+					watchPeriods[currentGuardId] = append(watchPeriods[currentGuardId], currentWatchPeriod)
+				}
+			}
+			if !(guardPresent && currentlyInGuardPeriod && !guardAsleep) {
+				currentWatchPeriod[min] += 1
+			}
+			currentTime = currentTime.Add(time.Minute * 1)
+		}
+	}
+	return watchPeriods
+}
+
+type watchPeriod [60]int
 
 func (p timeSlice) Len() int {
     return len(p)
@@ -297,7 +377,8 @@ func main() {
 	timeSortedEvents := sortEventsByTime(events)
 	sort.Sort(timeSortedEvents)
 	fmt.Println(timeSortedEvents)
-	fmt.Println(timeSortedEvents[0])
+	watchPeriods := generateWatchPeriods(timeSortedEvents)
+	fmt.Println(watchPeriods)
 	//rectangles := getRectanglesFromStrings(string_array)
 	//minX, maxX, minY, maxY := getFabricDimensions(rectangles)
 	//fmt.Printf("minX=%d, maxX=%d, minY=%d, maxY=%d\n", minX, maxX, minY, maxY)
