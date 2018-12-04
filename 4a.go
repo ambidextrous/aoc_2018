@@ -285,62 +285,68 @@ type guard []watchPeriod
 
 func generateWatchPeriods(events []event) map[int][]watchPeriod {
 	endTime := events[len(events)-1].start.Add(time.Hour * 2)
+	startTime := events[0].start.Add(time.Hour * -2)
 	events = append(events, event{start: endTime})
+	prependEvent := make([]event, 0)
+	prependEvent = append(prependEvent, event{start: startTime})
+	events = append(prependEvent, events...)
 	watchPeriods := make(map[int][]watchPeriod)
-	currentTime := events[0].start
+	currentTime := startTime
 	hr, min, _ := currentTime.Clock()
-	currentTime = currentTime.Add(time.Hour * -2)
-	currentGuardId := events[0].guardId
+	currentGuardId := 0
 	currentWatchPeriod := watchPeriod{}
-	guardPresent := false
+	guardPresent := true
 	guardAsleep := false
 	currentlyInGuardPeriod := false
 	currentEvent := events[0]
 	nextEvent := events[1]
-	for i := 0; i < len(events)-1; i++ {
-		currentEvent = events[i]
-		if currentEvent.guardId > 0 {
-			currentGuardId = events[i].guardId
-		}
-		nextEvent = events[i+1]
-		if currentEvent.kind == "fallsAsleep" {
-			guardAsleep = true
-		} else if currentEvent.kind == "wakesUp" {
-			guardAsleep = false
-		} else if currentEvent.kind == "arrives" {
-			guardPresent = true
-			guardAsleep = false
-		} else {
-			panic(currentEvent.kind)
-		}
-		for currentTime.Before(nextEvent.start) {
-			fmt.Println(currentTime.String())
-			if currentlyInGuardPeriod {
-				fmt.Printf("guardAsleep = %t\n", guardAsleep)
-				fmt.Printf("guardPresent = %t\n", guardPresent)
-				fmt.Printf("currentlyInGuardPeriod = %t\n", currentlyInGuardPeriod)
-				fmt.Println(currentWatchPeriod)
+	eventCounter := 0
+	//for eventCounter < len(events) {
+	for currentTime.Before(endTime) {
+		if !currentTime.Before(nextEvent.start) {
+			eventCounter = eventCounter + 1
+			currentEvent = nextEvent
+			nextEvent = events[eventCounter+1]
+			if currentEvent.guardId > 0 {
+				currentGuardId = currentEvent.guardId
 			}
-			hr, min, _ = currentTime.Clock()
-			if hr == 0 && min == 0 {
-				currentWatchPeriod = watchPeriod{}
-				currentlyInGuardPeriod = true
-			} else if hr == 1 && min == 0 {
-				guardPresent = false
-				currentlyInGuardPeriod = false
+			if currentEvent.kind == "fallsAsleep" {
+				guardAsleep = true
+			} else if currentEvent.kind == "wakesUp" {
 				guardAsleep = false
-				if _, ok := watchPeriods[currentGuardId]; ok {
-					watchPeriods[currentGuardId] = append(watchPeriods[currentGuardId], currentWatchPeriod)
-				} else {
-					watchPeriods[currentGuardId] = make([]watchPeriod, 0)
-					watchPeriods[currentGuardId] = append(watchPeriods[currentGuardId], currentWatchPeriod)
-				}
+			} else if currentEvent.kind == "arrives" {
+				guardPresent = true
+				guardAsleep = false
+			} else {
+				panic(currentEvent.kind)
 			}
-			if !(guardPresent && currentlyInGuardPeriod && !guardAsleep) {
-				currentWatchPeriod[min] += 1
-			}
-			currentTime = currentTime.Add(time.Minute * 1)
 		}
+		if currentlyInGuardPeriod {
+			fmt.Printf("guardAsleep = %t\n", guardAsleep)
+			fmt.Printf("guardPresent = %t\n", guardPresent)
+			fmt.Printf("currentlyInGuardPeriod = %t\n", currentlyInGuardPeriod)
+			fmt.Printf("currentTime = %s\n", currentTime)
+			fmt.Println(currentWatchPeriod)
+		}
+		hr, min, _ = currentTime.Clock()
+		if hr == 0 && min == 0 {
+			currentWatchPeriod = watchPeriod{}
+			currentlyInGuardPeriod = true
+		} else if hr == 1 && min == 0 {
+			guardPresent = false
+			currentlyInGuardPeriod = false
+			guardAsleep = false
+			if _, ok := watchPeriods[currentGuardId]; ok {
+				watchPeriods[currentGuardId] = append(watchPeriods[currentGuardId], currentWatchPeriod)
+			} else {
+				watchPeriods[currentGuardId] = make([]watchPeriod, 0)
+				watchPeriods[currentGuardId] = append(watchPeriods[currentGuardId], currentWatchPeriod)
+			}
+		}
+		if guardPresent && currentlyInGuardPeriod && guardAsleep {
+			currentWatchPeriod[min] += 1
+		}
+		currentTime = currentTime.Add(time.Minute * 1)
 	}
 	return watchPeriods
 }
@@ -368,7 +374,7 @@ func sortEventsByTime(events timeSlice) timeSlice {
 }
 
 func main() {
-	filename := "test"
+	filename := "input4a"
 	input := read_file(filename)
 	stringArray := split_string_of_strings(input)
 	fmt.Println(stringArray)
