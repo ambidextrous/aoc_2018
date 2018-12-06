@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"strings"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 )
@@ -112,22 +112,22 @@ func get_composite_id(set map[string]bool) string {
 
 //#1229 @ 441,869: 8x20
 type rectangle struct {
-	id int
-	x int
-	y int
-	width int
+	id     int
+	x      int
+	y      int
+	width  int
 	height int
 }
 
 func trimLeftChars(s string, n int) string {
-    m := 0
-    for i := range s {
-        if m >= n {
-            return s[i:]
-        }
-        m++
-    }
-    return s[:0]
+	m := 0
+	for i := range s {
+		if m >= n {
+			return s[i:]
+		}
+		m++
+	}
+	return s[:0]
 }
 
 //#1229 @ 441,869: 8x20
@@ -147,7 +147,7 @@ func getRectangleFromString(s string) rectangle {
 	check(err)
 	height, err := strconv.Atoi(widthAndHeight[1])
 	check(err)
-	rect := rectangle{id: id, x: x, y: y, width: width, height: height} 
+	rect := rectangle{id: id, x: x, y: y, width: width, height: height}
 	return rect
 }
 
@@ -169,13 +169,13 @@ func getFabricDimensions(rectangles []rectangle) (int, int, int, int) {
 		if rect.x < minX {
 			minX = rect.x
 		}
-		if rect.x + rect.width > maxX {
+		if rect.x+rect.width > maxX {
 			maxX = rect.x + rect.width
 		}
 		if rect.y < minY {
 			minY = rect.y
 		}
-		if rect.y + rect.height > maxY {
+		if rect.y+rect.height > maxY {
 			maxY = rect.y + rect.height
 		}
 	}
@@ -192,8 +192,8 @@ func generateMatrix(maxX int, maxY int) [][]int {
 
 func markFabric(fabric [][]int, rectangles []rectangle) [][]int {
 	for _, rect := range rectangles {
-		for i := rect.x; i < rect.x + rect.width; i++ {
-			for j := rect.y; j < rect.y + rect.height; j++ {
+		for i := rect.x; i < rect.x+rect.width; i++ {
+			for j := rect.y; j < rect.y+rect.height; j++ {
 				fabric[i][j] += 1
 			}
 		}
@@ -205,8 +205,8 @@ func findNonOverlapping(fabric [][]int, rectangles []rectangle) []rectangle {
 	nonOverlapping := make([]rectangle, 0)
 	for _, rect := range rectangles {
 		overlapping := false
-		for i := rect.x; i < rect.x + rect.width; i++ {
-			for j := rect.y; j < rect.y + rect.height; j++ {
+		for i := rect.x; i < rect.x+rect.width; i++ {
+			for j := rect.y; j < rect.y+rect.height; j++ {
 				if fabric[i][j] != 1 {
 					overlapping = true
 				}
@@ -232,11 +232,11 @@ func countOverlapping(fabric [][]int, rectangles []rectangle, maxX int, maxY int
 }
 
 type event struct {
-	start time.Time
-	rawString string
+	start         time.Time
+	rawString     string
 	isoTimeString string
-	kind string
-	guardId int
+	kind          string
+	guardId       int
 }
 
 func getIsoStringFromRawString(raw string) string {
@@ -354,23 +354,23 @@ func generateWatchPeriods(events []event) map[int][]watchPeriod {
 type watchPeriod [60]int
 
 func (p timeSlice) Len() int {
-    return len(p)
+	return len(p)
 }
 
 func (p timeSlice) Less(i, j int) bool {
-    return p[i].start.Before(p[j].start)
+	return p[i].start.Before(p[j].start)
 }
 
 func (p timeSlice) Swap(i, j int) {
-    p[i], p[j] = p[j], p[i]
+	p[i], p[j] = p[j], p[i]
 }
 
 func sortEventsByTime(events timeSlice) timeSlice {
-    timeSortedEvents := make(timeSlice, 0, len(events))
-    for _, d := range events {
-        timeSortedEvents = append(timeSortedEvents, d)
-    }
-    return timeSortedEvents
+	timeSortedEvents := make(timeSlice, 0, len(events))
+	for _, d := range events {
+		timeSortedEvents = append(timeSortedEvents, d)
+	}
+	return timeSortedEvents
 }
 
 func getSleepiestGuard(watchPeriods map[int][]watchPeriod) (int, int) {
@@ -410,7 +410,7 @@ func getSleepiestMinute(watches []watchPeriod) (int, int) {
 	return sleepiestMinute, sleepMax
 }
 
-func getSleepiestMinuteByGuardId(watchPeriods map[int][]watchPeriod) (int) {
+func getSleepiestMinuteByGuardId(watchPeriods map[int][]watchPeriod) int {
 	sleepiestGuardId := 0
 	maxNumSleeps := 0
 	minuteWithMostSleeps := 0
@@ -427,7 +427,7 @@ func getSleepiestMinuteByGuardId(watchPeriods map[int][]watchPeriod) (int) {
 
 func sameTimeAndOppositePolarity(first rune, second rune) bool {
 	if unicode.ToLower(first) == unicode.ToLower(second) {
-		if (unicode.IsLower(first) && unicode.IsUpper(second) || (unicode.IsUpper(first) && unicode.IsLower(second))) {
+		if unicode.IsLower(first) && unicode.IsUpper(second) || (unicode.IsUpper(first) && unicode.IsLower(second)) {
 			return true
 		}
 	}
@@ -438,13 +438,13 @@ func reducePolymer(polymer string, cur rune) string {
 	newPolymer := ""
 	for {
 		newPolymer = ""
-		for i:=0; i < len(polymer); i++ {
-			if i < len(polymer) -1 {
+		for i := 0; i < len(polymer); i++ {
+			if i < len(polymer)-1 {
 				if sameTimeAndOppositePolarity(rune(polymer[i]), rune(polymer[i+1])) {
 					i += 1
 				} else {
 					newPolymer += string(rune(polymer[i]))
-				} 
+				}
 			} else {
 				newPolymer += string(rune(polymer[i]))
 			}
@@ -462,7 +462,7 @@ func getShortestPolymer(unalteredPolymer string) int {
 	alphabetLower := "abcdefghijklmnopqrstuvwxyz"
 	alphabetUpper := "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	shortest := len(unalteredPolymer)
-	for i:=0; i<len(alphabetLower); i++ {
+	for i := 0; i < len(alphabetLower); i++ {
 		newPolymer := strings.Replace(unalteredPolymer, string(alphabetLower[i]), "", -1)
 		newPolymer = strings.Replace(newPolymer, string(alphabetUpper[i]), "", -1)
 		reducedPolymer := reducePolymer(newPolymer, rune(alphabetLower[i]))
@@ -473,23 +473,21 @@ func getShortestPolymer(unalteredPolymer string) int {
 	return shortest
 }
 
-
 func getCordinatesSlice(rawInput string) []coordinate {
 	coordinates := make([]coordinate, 0)
 	linesArray := strings.Split(rawInput, "\n")
 	fmt.Println(linesArray)
 	for i, line := range linesArray {
 		if len(line) > 0 {
-			original := true
 			index := i
 			x, err := strconv.Atoi(strings.Split(line, ",")[0])
 			check(err)
 			y, err := strconv.Atoi(strings.Split(line, " ")[1])
 			check(err)
-			positions := make([]positions,1)
+			positions := make([]position, 1)
 			startPos := position{x: x, y: y}
 			positions = append(positions, startPos)
-			coord := coordinate{x: x, y: y, index: index, original: original}
+			coord := coordinate{x: x, y: y, index: index, closestNeighbour: index}
 			coordinates = append(coordinates, coord)
 		}
 	}
@@ -511,14 +509,14 @@ func getMaxXAndY(coordiantesSlice []coordinate) (int, int) {
 }
 
 type coordinate struct {
-	index int
-	x int
-	y int
-	infinite bool
-	area int
-	original bool
-	neighbours []position
-	closestNeighbour int
+	index                        int
+	x                            int
+	y                            int
+	infinite                     bool
+	area                         int
+	neighbours                   []position
+	closestNeighbour             int
+	distanceFromClosestNeighbour int
 }
 
 func getEmptyGrid(maxX int, maxY int) [][]coordinate {
@@ -546,12 +544,8 @@ func getNeighbouringPositions(initialPos position) []position {
 	neighbouringPositions := make([]position, 0)
 	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x + 0, y: initialPos.y + 1})
 	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x + 0, y: initialPos.y - 1})
-	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x + 1, y: initialPos.y + 1})
 	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x + 1, y: initialPos.y + 0})
-	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x + 1, y: initialPos.y - 1})
-	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x - 1, y: initialPos.y + 1})
 	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x - 1, y: initialPos.y + 0})
-	neighbouringPositions = append(neighbouringPositions, position{x: initialPos.x - 1, y: initialPos.y - 1})
 	return neighbouringPositions
 }
 
@@ -565,36 +559,50 @@ func filterPositionsOutsideWorld(positions []position, maxX int, maxY int) []pos
 	return positionsInWorld
 }
 
-func markNeighbours(coord coordiante, populatedGrid [][]coordinate) ([]position, [][]coordinate) {
-	newNeighbours := make([]position,0)
-	for _, pos := range coord.neighbouringPositions {
+func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromInitialCoordiate int) (coordinate, [][]coordinate) {
+	newNeighbours := make([]position, 0)
+	for _, pos := range coord.neighbours {
 		addToNewNeighbours := true
-		if populatedGrid[pos.x][pos.y].original { // Starting position
+		if populatedGrid[pos.x][pos.y].index == populatedGrid[pos.x][pos.y].closestNeighbour { // Starting position
+			addToNewNeighbours = false
+		} else if populatedGrid[pos.x][pos.y].closestNeighbour == coord.index { // Already marked as neighbour
 			addToNewNeighbours = false
 		} else if populatedGrid[pos.x][pos.y].closestNeighbour < 0 { // Equidistant grid position
 			addToNewNeighbours = false
 		} else if populatedGrid[pos.x][pos.y].closestNeighbour != 0 {
-			populatedGrid[pos.x][pos.y].closestNeighbour = -1
-			addToNewNeighbours = false
+			if populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour == movesFromInitialCoordiate {
+				populatedGrid[pos.x][pos.y].closestNeighbour = -1
+			} else if populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour < movesFromInitialCoordiate {
+				addToNewNeighbours = false
+			} else {
+				populatedGrid[pos.x][pos.y].closestNeighbour = coord.index
+				populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour = movesFromInitialCoordiate
+				addToNewNeighbours = true
+			}
 		} else {
-			populatedGrid[pos.x][pos.y] = coord.index
+			populatedGrid[pos.x][pos.y].closestNeighbour = coord.index
+			populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour = movesFromInitialCoordiate
+			addToNewNeighbours = true
 		}
 		if addToNewNeighbours {
 			potentialNeighbours := getNeighbouringPositions(pos)
-			neighboursInWorld := filterPositionsOutsideWorld(potentialNeighbours)
-			newNeighbours = append(newNeighbours, neighboursInWorld)
+			neighboursInWorld := filterPositionsOutsideWorld(potentialNeighbours, len(populatedGrid), len(populatedGrid[0]))
+			newNeighbours = append(newNeighbours, neighboursInWorld...)
 		}
 	}
-	return newNeighbours, populatedGrid
+	coord.neighbours = newNeighbours
+	return coord, populatedGrid
 }
 
-func markGrid(coordinates []coordinate, populatedGrid [][]coordinates) [][]coordiantes {
-	numCoordinatesStillMarking := len(coordiantes)
+func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordinate {
+	numCoordinatesStillMarking := len(coordinates)
 	for numCoordinatesStillMarking > 0 {
 		numCoordinatesStillMarking = 0
+		moveCounter := 0
 		for _, coordinate := range coordinates {
-			coordinate, populatedGrid = markNeighbours(coordinate, populatedGrid)
-			if len(coordiante.neighbours > 0) {
+			moveCounter += 1
+			coordinate, populatedGrid = markNeighbours(coordinate, populatedGrid, moveCounter)
+			if len(coordinate.neighbours) > 0 {
 				numCoordinatesStillMarking += 1
 			}
 		}
@@ -616,8 +624,8 @@ func main() {
 	for _, line := range populatedGrid {
 		fmt.Println(line)
 	}
-	markedGrid := markGrid(coordinates, populatedGrid)
-	fmt.Printf(markedGrid)
+	markedGrid := markGrid(coordinatesSlice, populatedGrid)
+	fmt.Println(markedGrid)
 	//calculatedAreas := calculateAreas(markedGird, maxX, maxY)
 	//largestNonInfiniteAreaSize := getLargestNonInfiniteAreaSize(coordiantesMap)
 
