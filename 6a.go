@@ -9,6 +9,13 @@ import (
 	"unicode"
 )
 
+func Abs(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
 func check(e error) {
 	if e != nil {
 		panic(e)
@@ -520,9 +527,9 @@ type coordinate struct {
 }
 
 func getEmptyGrid(maxX int, maxY int) [][]coordinate {
-	xGrid := make([][]coordinate, maxX +1)
+	xGrid := make([][]coordinate, maxX+1)
 	for i, _ := range xGrid {
-		yGrid := make([]coordinate, maxY +1)
+		yGrid := make([]coordinate, maxY+1)
 		xGrid[i] = yGrid
 	}
 	return xGrid
@@ -631,7 +638,7 @@ func prettyPrintGrid(grid [][]coordinate) {
 }
 
 func countPopulationTotals(grid [][]coordinate) map[int]int {
-	countMap := make(map[int]int,0)
+	countMap := make(map[int]int, 0)
 	for _, line := range grid {
 		for _, square := range line {
 			if _, ok := countMap[square.closestNeighbour]; ok {
@@ -645,10 +652,10 @@ func countPopulationTotals(grid [][]coordinate) map[int]int {
 }
 
 func getFiniteAreas(grid [][]coordinate) map[int]bool {
-	infiniteMap := make(map[int]bool,0)
+	infiniteMap := make(map[int]bool, 0)
 	for i, line := range grid {
 		for j, square := range line {
-			if i == 0 || j == 0 || i == len(grid) -1 || j == len(grid[0]) -1 {
+			if i == 0 || j == 0 || i == len(grid)-1 || j == len(grid[0])-1 {
 				if _, ok := infiniteMap[square.closestNeighbour]; ok {
 					infiniteMap[square.closestNeighbour] = true
 				} else {
@@ -676,9 +683,52 @@ func getLargestFiniteArea(infiniteMap map[int]bool, populationTotalMap map[int]i
 	return largestFiniteArea
 }
 
+type distAndCoord struct {
+	dist  int
+	coord coordinate
+}
+
+func getNearestCoordinateIndex(pos position, coordinates []coordinate) int {
+	minDist := 100000000
+	distanceFrequencyMap := make(map[int]int, 0)
+	closesCoordIndex := -2
+	for i, coord := range coordinates {
+		dist := Abs(pos.x-coord.x) + Abs(pos.y-coord.y)
+		//fmt.Printf("Abs(pos.x-coord.x) + Abs(pos.y-coord.y) = Abs(%d - %d) + Abs(%d = %d) = %d\n", pos.x, coord.y, pos.y, coord.y, dist)
+		if dist < minDist {
+			minDist = dist
+			closesCoordIndex = i + 1
+		}
+		if _, ok := distanceFrequencyMap[dist]; ok {
+			distanceFrequencyMap[dist] += 1
+		} else {
+			distanceFrequencyMap[dist] = 1
+		}
+	}
+	//fmt.Printf("%+v\n", distanceFrequencyMap)
+	//fmt.Println()
+	if distanceFrequencyMap[minDist] > 1 {
+		return -1
+	}
+	return closesCoordIndex
+}
+
+func markDistancesWithoutBlowingStack(coordinates []coordinate, grid [][]coordinate) [][]coordinate {
+	for i, line := range grid {
+		for j, _ := range line {
+			currentPos := position{x: i, y: j}
+			//square.closestNeighbour = getNearestCoordinateIndex(currentPos, coordinates)
+			grid[i][j].closestNeighbour = getNearestCoordinateIndex(currentPos, coordinates)
+			//fmt.Printf("%s", square.closestNeighbour)
+		}
+		//fmt.Printf("\n")
+	}
+	return grid
+}
+
 func main() {
 	filename := "test"
-	filename = "input6a"
+	//filename = "input6a"
 	input := read_file(filename)
 	fmt.Println("input:")
 	fmt.Println(input)
@@ -688,11 +738,16 @@ func main() {
 	maxX, maxY := getMaxXAndY(coordinatesSlice)
 	fmt.Printf("maxX = %d; maxY = %d\n", maxX, maxY)
 	emptyGrid := getEmptyGrid(maxX, maxY)
-	fmt.Println("Populating grid...")
-	populatedGrid := populateGrid(emptyGrid, coordinatesSlice)
-	fmt.Println("Marking grid...")
-	markedGrid := markGrid(coordinatesSlice, populatedGrid)
+
+	fmt.Println("Marking grid without blowing stack...")
+	markedGrid := markDistancesWithoutBlowingStack(coordinatesSlice, emptyGrid)
 	prettyPrintGrid(markedGrid)
+
+	//fmt.Println("Populating grid...")
+	//populatedGrid := populateGrid(emptyGrid, coordinatesSlice)
+	//fmt.Println("Marking grid...")
+	//markedGrid := markGrid(coordinatesSlice, populatedGrid)
+
 	populationTotalMap := countPopulationTotals(markedGrid)
 	infiniteMap := getFiniteAreas(markedGrid)
 	largestFiniteArea := getLargestFiniteArea(infiniteMap, populationTotalMap)
