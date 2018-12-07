@@ -566,51 +566,47 @@ func filterPositionsOutsideWorld(positions []position, maxX int, maxY int) []pos
 	return positionsInWorld
 }
 
-func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromInitialCoordiate int) (coordinate, [][]coordinate) {
+func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromInitialCoordiate int) ([]position, [][]coordinate) {
+	fmt.Println("markNeighbours")
 	newNeighbours := make([]position, 0)
 	for _, pos := range coord.neighbours {
-		addToNewNeighbours := true
 		//fmt.Println("pos.x = " + strconv.Itoa(pos.x))
 		//fmt.Println("pos.y = " + strconv.Itoa(pos.y))
 		//fmt.Println("populatedGrid[pos.x][pos.y].index = " + strconv.Itoa(populatedGrid[pos.x][pos.y].index))
 		//fmt.Println("populatedGrid[pos.x][pos.y].closestNeighbour = " + strconv.Itoa(populatedGrid[pos.x][pos.y].closestNeighbour))
-		fmt.Printf("%#v\n", populatedGrid[pos.x][pos.y])
-		fmt.Printf("%#v\n", pos)
+		//fmt.Printf("%#v\n", populatedGrid[pos.x][pos.y])
+		//fmt.Printf("%#v\n", pos)
 		fmt.Println()
-		if populatedGrid[pos.x][pos.y].index == populatedGrid[pos.x][pos.y].closestNeighbour && populatedGrid[pos.x][pos.y].index != 0 { // Starting position
-			addToNewNeighbours = false
-		} else if populatedGrid[pos.x][pos.y].closestNeighbour == coord.index { // Already marked as neighbour
-			addToNewNeighbours = false
-		} else if populatedGrid[pos.x][pos.y].closestNeighbour < 0 { // Equidistant grid position
-			addToNewNeighbours = false
-		} else if populatedGrid[pos.x][pos.y].closestNeighbour != 0 {
-			if populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour == movesFromInitialCoordiate {
-				populatedGrid[pos.x][pos.y].closestNeighbour = -1
-			} else if populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour < movesFromInitialCoordiate {
-				addToNewNeighbours = false
-			} else {
-				populatedGrid[pos.x][pos.y].closestNeighbour = coord.index
-				populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour = movesFromInitialCoordiate
-				addToNewNeighbours = true
-			}
-		} else if populatedGrid[pos.x][pos.y].closestNeighbour == 0{
-			populatedGrid[pos.x][pos.y].closestNeighbour = coord.index
-			populatedGrid[pos.x][pos.y].distanceFromClosestNeighbour = movesFromInitialCoordiate
-			addToNewNeighbours = true
-		} else {
-			panic("Mark neighbours")
+		addNewNeighbours := false
+		gridSquare := populatedGrid[pos.x][pos.y] 
+		if gridSquare.closestNeighbour == 0 {
+			gridSquare.closestNeighbour = coord.index
+			gridSquare.distanceFromClosestNeighbour = movesFromInitialCoordiate
+			addNewNeighbours = true
+		} else if gridSquare.distanceFromClosestNeighbour == movesFromInitialCoordiate && gridSquare.closestNeighbour != coord.index {
+			//fmt.Println("CLOSEST NEIGHBOUR = -1")
+			gridSquare.closestNeighbour = -1
+			gridSquare.distanceFromClosestNeighbour = movesFromInitialCoordiate
 		}
-		if addToNewNeighbours {
+		populatedGrid[pos.x][pos.y] = gridSquare
+		if addNewNeighbours {
+			//fmt.Printf("gridSquare = %#v\n", gridSquare)
 			potentialNeighbours := getNeighbouringPositions(pos)
 			neighboursInWorld := filterPositionsOutsideWorld(potentialNeighbours, len(populatedGrid), len(populatedGrid[0]))
 			newNeighbours = append(newNeighbours, neighboursInWorld...)
+			//fmt.Printf("pos = %#v\n", pos)
+			//fmt.Printf("neighboursInWorld = %#v\n", neighboursInWorld)
+			//fmt.Println("populatedGrid_1")
+			//prettyPrintGrid(populatedGrid)
 		}
 	}
-	coord.neighbours = newNeighbours
-	return coord, populatedGrid
+	//fmt.Println("populatedGrid_2")
+	//prettyPrintGrid(populatedGrid)
+	return newNeighbours, populatedGrid
 }
 
 func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordinate {
+	fmt.Println("markGrid:")
 	initialNeighbours := make([][]position, 0)
 	for _, coord := range coordinates {
 		neighbours := getNeighbouringPositions(position{coord.x, coord.y})
@@ -622,20 +618,26 @@ func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordi
 	firstPass := true
 	numCoordinatesStillMarking := len(coordinates)
 	moveCounter := 0
+	coordinateNeighbourMap := make(map[int][]position, 0)
 	for numCoordinatesStillMarking > 0 {
+		//fmt.Println("MOVE COUNTER = ", strconv.Itoa(moveCounter))
 		moveCounter += 1
 		numCoordinatesStillMarking = 0
 		for i, coordinate := range coordinates {
 			if firstPass {
 				coordinate.neighbours = initialNeighbours[i]
+			} else {
+				coordinate.neighbours = coordinateNeighbourMap[i+1]
 			}
-			fmt.Printf("markGrid: %#v\n", coordinate)
-			coordinate, populatedGrid = markNeighbours(coordinate, populatedGrid, moveCounter)
-			if len(coordinate.neighbours) > 0 {
+			coordinateNeighbourMap[i+1], populatedGrid = markNeighbours(coordinate, populatedGrid, moveCounter)
+			prettyPrintGrid(populatedGrid)
+			if len(coordinateNeighbourMap[i+1]) > 0 {
+				//fmt.Printf("coordinateNeighbourMap[i+1]: %#v\n", coordinateNeighbourMap[i+1])
 				numCoordinatesStillMarking += 1
 			}
 		}
 		firstPass = false
+		//fmt.Println("numCoordinatesStillMarking = ", strconv.Itoa(numCoordinatesStillMarking))
 	}
 	return populatedGrid
 }
@@ -644,7 +646,10 @@ func prettyPrintGrid(grid [][]coordinate) {
 	for _, row := range grid {
 		output := ""
 		for _, square := range row {
-			output += strconv.Itoa(square.index) + " "
+			if square.closestNeighbour >= 0 {
+				output += " "
+			}
+			output += strconv.Itoa(square.closestNeighbour) + " "
 		}
 		fmt.Println(output + "\n")
 	}
@@ -665,7 +670,7 @@ func main() {
 	for _, line := range populatedGrid {
 		fmt.Println(line)
 	}
-	prettyPrintGrid(populatedGrid)
+	//prettyPrintGrid(populatedGrid)
 	markedGrid := markGrid(coordinatesSlice, populatedGrid)
 	fmt.Println(markedGrid)
 	prettyPrintGrid(markedGrid)
