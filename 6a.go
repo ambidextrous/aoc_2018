@@ -623,6 +623,10 @@ func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordi
 	for numCoordinatesStillMarking > 0 {
 		//fmt.Println("MOVE COUNTER = ", strconv.Itoa(moveCounter))
 		moveCounter += 1
+		if moveCounter > 2000 {
+			panic("Too many moves!")
+		}
+		fmt.Printf("moveCounter = %s\n", moveCounter)
 		numCoordinatesStillMarking = 0
 		for i, coordinate := range coordinates {
 			if firstPass {
@@ -743,18 +747,22 @@ func main() {
 	filename := "test"
 	filename = "input6a"
 	input := read_file(filename)
+	fmt.Println("input:")
 	fmt.Println(input)
 	coordinatesSlice := getCordinatesSlice(input)
+	fmt.Println("Coordiante slice:")
 	fmt.Println(coordinatesSlice)
 	maxX, maxY := getMaxXAndY(coordinatesSlice)
 	fmt.Printf("maxX = %d; maxY = %d\n", maxX, maxY)
 	emptyGrid := getEmptyGrid(maxX, maxY)
+	fmt.Println("Populating grid...")
 	populatedGrid := populateGrid(emptyGrid, coordinatesSlice)
-	prettyPrintGrid(populatedGrid)
+	//prettyPrintGrid(populatedGrid)
 	//for _, line := range populatedGrid {
 	//	fmt.Println(line)
 	//}
 	//prettyPrintGrid(populatedGrid)
+	fmt.Println("Marking grid...")
 	markedGrid := markGrid(coordinatesSlice, populatedGrid)
 	//fmt.Println(markedGrid)
 	prettyPrintGrid(markedGrid)
