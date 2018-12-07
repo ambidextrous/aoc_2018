@@ -476,7 +476,6 @@ func getShortestPolymer(unalteredPolymer string) int {
 func getCordinatesSlice(rawInput string) []coordinate {
 	coordinates := make([]coordinate, 0)
 	linesArray := strings.Split(rawInput, "\n")
-	//fmt.Println(linesArray)
 	for i, line := range linesArray {
 		if len(line) > 0 {
 			index := i + 1
@@ -488,10 +487,6 @@ func getCordinatesSlice(rawInput string) []coordinate {
 			y -= 1
 			coord := coordinate{x: x, y: y, index: index, closestNeighbour: index}
 			neighbours := make([]position, 0)
-			//startPos := position{x: x, y: y}
-			//initialNeighbours := getNeighbouringPositions(startPos)
-			//neighboursInWorld := filterPositionsOutsideWorld(initialNeighbours)
-			//neighbours = append(neighbours, neighboursInWorld...)
 			coord.neighbours = neighbours
 			coordinates = append(coordinates, coord)
 		}
@@ -535,8 +530,6 @@ func getEmptyGrid(maxX int, maxY int) [][]coordinate {
 
 func populateGrid(emptyGrid [][]coordinate, coordinates []coordinate) [][]coordinate {
 	for _, coord := range coordinates {
-		//fmt.Println("coord.x = " + strconv.Itoa(coord.x))
-		//fmt.Println("coord.y = " + strconv.Itoa(coord.y))
 		emptyGrid[coord.x][coord.y] = coord
 	}
 	return emptyGrid
@@ -567,61 +560,41 @@ func filterPositionsOutsideWorld(positions []position, maxX int, maxY int) []pos
 }
 
 func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromInitialCoordiate int) ([]position, [][]coordinate) {
-	//fmt.Println("markNeighbours")
 	newNeighbours := make([]position, 0)
 	for _, pos := range coord.neighbours {
-		//fmt.Println("pos.x = " + strconv.Itoa(pos.x))
-		//fmt.Println("pos.y = " + strconv.Itoa(pos.y))
-		//fmt.Println("populatedGrid[pos.x][pos.y].index = " + strconv.Itoa(populatedGrid[pos.x][pos.y].index))
-		//fmt.Println("populatedGrid[pos.x][pos.y].closestNeighbour = " + strconv.Itoa(populatedGrid[pos.x][pos.y].closestNeighbour))
-		//fmt.Printf("%#v\n", populatedGrid[pos.x][pos.y])
-		//fmt.Printf("%#v\n", pos)
-		//fmt.Println()
 		addNewNeighbours := false
-		gridSquare := populatedGrid[pos.x][pos.y] 
+		gridSquare := (populatedGrid)[pos.x][pos.y]
 		if gridSquare.closestNeighbour == 0 {
 			gridSquare.closestNeighbour = coord.index
 			gridSquare.distanceFromClosestNeighbour = movesFromInitialCoordiate
 			addNewNeighbours = true
 		} else if gridSquare.distanceFromClosestNeighbour == movesFromInitialCoordiate && gridSquare.closestNeighbour != coord.index {
-			//fmt.Println("CLOSEST NEIGHBOUR = -1")
 			gridSquare.closestNeighbour = -1
 			gridSquare.distanceFromClosestNeighbour = movesFromInitialCoordiate
 			addNewNeighbours = true
 		}
 		populatedGrid[pos.x][pos.y] = gridSquare
 		if addNewNeighbours {
-			//fmt.Printf("gridSquare = %#v\n", gridSquare)
 			potentialNeighbours := getNeighbouringPositions(pos)
 			neighboursInWorld := filterPositionsOutsideWorld(potentialNeighbours, len(populatedGrid), len(populatedGrid[0]))
 			newNeighbours = append(newNeighbours, neighboursInWorld...)
-			//fmt.Printf("pos = %#v\n", pos)
-			//fmt.Printf("neighboursInWorld = %#v\n", neighboursInWorld)
-			//fmt.Println("populatedGrid_1")
-			//prettyPrintGrid(populatedGrid)
 		}
 	}
-	//fmt.Println("populatedGrid_2")
-	//prettyPrintGrid(populatedGrid)
 	return newNeighbours, populatedGrid
 }
 
 func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordinate {
-	//fmt.Println("markGrid:")
 	initialNeighbours := make([][]position, 0)
 	for _, coord := range coordinates {
 		neighbours := getNeighbouringPositions(position{coord.x, coord.y})
 		neighboursInWorld := filterPositionsOutsideWorld(neighbours, len(populatedGrid), len(populatedGrid[0]))
 		initialNeighbours = append(initialNeighbours, neighboursInWorld)
-		//coord.neighbours = neighboursInWorld
-		//fmt.Printf("markGrid 1: %#v\n", coord)
 	}
 	firstPass := true
 	numCoordinatesStillMarking := len(coordinates)
 	moveCounter := 0
 	coordinateNeighbourMap := make(map[int][]position, 0)
 	for numCoordinatesStillMarking > 0 {
-		//fmt.Println("MOVE COUNTER = ", strconv.Itoa(moveCounter))
 		moveCounter += 1
 		if moveCounter > 2000 {
 			panic("Too many moves!")
@@ -635,14 +608,11 @@ func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordi
 				coordinate.neighbours = coordinateNeighbourMap[i+1]
 			}
 			coordinateNeighbourMap[i+1], populatedGrid = markNeighbours(coordinate, populatedGrid, moveCounter)
-			//prettyPrintGrid(populatedGrid)
 			if len(coordinateNeighbourMap[i+1]) > 0 {
-				//fmt.Printf("coordinateNeighbourMap[i+1]: %#v\n", coordinateNeighbourMap[i+1])
 				numCoordinatesStillMarking += 1
 			}
 		}
 		firstPass = false
-		//fmt.Println("numCoordinatesStillMarking = ", strconv.Itoa(numCoordinatesStillMarking))
 	}
 	return populatedGrid
 }
@@ -659,43 +629,6 @@ func prettyPrintGrid(grid [][]coordinate) {
 		fmt.Println(output + "\n")
 	}
 }
-
-//func markInfiniteCoordinates(grid [][]coordinate, coordiantes []coordinate) []bool {
-//	maxX := len(grid)
-//	maxY := len(grid[0])
-//	infinityArray := make([]bool, len(coordiantes))
-//	for i, line := range grid {
-//		for j, square := range line {
-//			//fmt.Printf("square: %#v\n", square)
-//			if square.closestNeighbour > 0 {
-//				if i == maxX - 1 || j == maxY - 1  || i == 0 || j == 0 {
-//					//fmt.Printf(strconv.Itoa(square.closestNeighbour))
-//					infinityArray[square.closestNeighbour -1] = true
-//				}
-//			}
-//		}
-//		//fmt.Println()
-//	}
-//	return infinityArray
-//}
-//
-//func getLargestFiniteArea(infinityArray []bool, markedGrid [][]coordinate) map[int]int {
-//	largestFiniteAreaMap := make(map[int]int,0)
-//	for i := 0; i < len(infinityArray); i++ {
-//		area := 0
-//		if infinityArray[i] {
-//			for _, line := range markedGrid {
-//				for _, square := range line {
-//					if square.closestNeighbour == i+1 {
-//						area += 1
-//					}
-//				}
-//			}
-//		}
-//		largestFiniteAreaMap[i] = area
-//	}
-//	return largestFiniteAreaMap
-//}
 
 func countPopulationTotals(grid [][]coordinate) map[int]int {
 	countMap := make(map[int]int,0)
@@ -757,36 +690,11 @@ func main() {
 	emptyGrid := getEmptyGrid(maxX, maxY)
 	fmt.Println("Populating grid...")
 	populatedGrid := populateGrid(emptyGrid, coordinatesSlice)
-	//prettyPrintGrid(populatedGrid)
-	//for _, line := range populatedGrid {
-	//	fmt.Println(line)
-	//}
-	//prettyPrintGrid(populatedGrid)
 	fmt.Println("Marking grid...")
 	markedGrid := markGrid(coordinatesSlice, populatedGrid)
-	//fmt.Println(markedGrid)
 	prettyPrintGrid(markedGrid)
-
 	populationTotalMap := countPopulationTotals(markedGrid)
-	//fmt.Println(populationTotalMap)
-
 	infiniteMap := getFiniteAreas(markedGrid)
-	//fmt.Println(infiniteMap)
-
 	largestFiniteArea := getLargestFiniteArea(infiniteMap, populationTotalMap)
 	fmt.Printf("largest finite area = %d\n", largestFiniteArea)
-
-	//infinityArray := markInfiniteCoordinates(markedGrid, coordinatesSlice)
-	//fmt.Println(infinityArray)
-	//largestFiniteAreaMap := getLargestFiniteArea(infinityArray, markedGrid)
-	//fmt.Println(largestFiniteAreaMap)
-
-	//calculatedAreas := calculateAreas(markedGird, maxX, maxY)
-	//largestNonInfiniteAreaSize := getLargestNonInfiniteAreaSize(coordiantesMap)
-
-	//input = "dabAcCaCBAcCcaDA"
-	//fmt.Printf("input = %s\n", input)
-	//reducedPolymer := reducePolymer(input)
-	//shortestLength := getShortestPolymer(input)
-	//fmt.Printf("shortestLength = %d\n", shortestLength)
 }
