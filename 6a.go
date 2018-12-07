@@ -476,7 +476,7 @@ func getShortestPolymer(unalteredPolymer string) int {
 func getCordinatesSlice(rawInput string) []coordinate {
 	coordinates := make([]coordinate, 0)
 	linesArray := strings.Split(rawInput, "\n")
-	fmt.Println(linesArray)
+	//fmt.Println(linesArray)
 	for i, line := range linesArray {
 		if len(line) > 0 {
 			index := i + 1
@@ -535,8 +535,8 @@ func getEmptyGrid(maxX int, maxY int) [][]coordinate {
 
 func populateGrid(emptyGrid [][]coordinate, coordinates []coordinate) [][]coordinate {
 	for _, coord := range coordinates {
-		fmt.Println("coord.x = " + strconv.Itoa(coord.x))
-		fmt.Println("coord.y = " + strconv.Itoa(coord.y))
+		//fmt.Println("coord.x = " + strconv.Itoa(coord.x))
+		//fmt.Println("coord.y = " + strconv.Itoa(coord.y))
 		emptyGrid[coord.x][coord.y] = coord
 	}
 	return emptyGrid
@@ -567,7 +567,7 @@ func filterPositionsOutsideWorld(positions []position, maxX int, maxY int) []pos
 }
 
 func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromInitialCoordiate int) ([]position, [][]coordinate) {
-	fmt.Println("markNeighbours")
+	//fmt.Println("markNeighbours")
 	newNeighbours := make([]position, 0)
 	for _, pos := range coord.neighbours {
 		//fmt.Println("pos.x = " + strconv.Itoa(pos.x))
@@ -576,7 +576,7 @@ func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromIni
 		//fmt.Println("populatedGrid[pos.x][pos.y].closestNeighbour = " + strconv.Itoa(populatedGrid[pos.x][pos.y].closestNeighbour))
 		//fmt.Printf("%#v\n", populatedGrid[pos.x][pos.y])
 		//fmt.Printf("%#v\n", pos)
-		fmt.Println()
+		//fmt.Println()
 		addNewNeighbours := false
 		gridSquare := populatedGrid[pos.x][pos.y] 
 		if gridSquare.closestNeighbour == 0 {
@@ -587,6 +587,7 @@ func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromIni
 			//fmt.Println("CLOSEST NEIGHBOUR = -1")
 			gridSquare.closestNeighbour = -1
 			gridSquare.distanceFromClosestNeighbour = movesFromInitialCoordiate
+			addNewNeighbours = true
 		}
 		populatedGrid[pos.x][pos.y] = gridSquare
 		if addNewNeighbours {
@@ -606,7 +607,7 @@ func markNeighbours(coord coordinate, populatedGrid [][]coordinate, movesFromIni
 }
 
 func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordinate {
-	fmt.Println("markGrid:")
+	//fmt.Println("markGrid:")
 	initialNeighbours := make([][]position, 0)
 	for _, coord := range coordinates {
 		neighbours := getNeighbouringPositions(position{coord.x, coord.y})
@@ -630,7 +631,7 @@ func markGrid(coordinates []coordinate, populatedGrid [][]coordinate) [][]coordi
 				coordinate.neighbours = coordinateNeighbourMap[i+1]
 			}
 			coordinateNeighbourMap[i+1], populatedGrid = markNeighbours(coordinate, populatedGrid, moveCounter)
-			prettyPrintGrid(populatedGrid)
+			//prettyPrintGrid(populatedGrid)
 			if len(coordinateNeighbourMap[i+1]) > 0 {
 				//fmt.Printf("coordinateNeighbourMap[i+1]: %#v\n", coordinateNeighbourMap[i+1])
 				numCoordinatesStillMarking += 1
@@ -655,9 +656,92 @@ func prettyPrintGrid(grid [][]coordinate) {
 	}
 }
 
+//func markInfiniteCoordinates(grid [][]coordinate, coordiantes []coordinate) []bool {
+//	maxX := len(grid)
+//	maxY := len(grid[0])
+//	infinityArray := make([]bool, len(coordiantes))
+//	for i, line := range grid {
+//		for j, square := range line {
+//			//fmt.Printf("square: %#v\n", square)
+//			if square.closestNeighbour > 0 {
+//				if i == maxX - 1 || j == maxY - 1  || i == 0 || j == 0 {
+//					//fmt.Printf(strconv.Itoa(square.closestNeighbour))
+//					infinityArray[square.closestNeighbour -1] = true
+//				}
+//			}
+//		}
+//		//fmt.Println()
+//	}
+//	return infinityArray
+//}
+//
+//func getLargestFiniteArea(infinityArray []bool, markedGrid [][]coordinate) map[int]int {
+//	largestFiniteAreaMap := make(map[int]int,0)
+//	for i := 0; i < len(infinityArray); i++ {
+//		area := 0
+//		if infinityArray[i] {
+//			for _, line := range markedGrid {
+//				for _, square := range line {
+//					if square.closestNeighbour == i+1 {
+//						area += 1
+//					}
+//				}
+//			}
+//		}
+//		largestFiniteAreaMap[i] = area
+//	}
+//	return largestFiniteAreaMap
+//}
+
+func countPopulationTotals(grid [][]coordinate) map[int]int {
+	countMap := make(map[int]int,0)
+	for _, line := range grid {
+		for _, square := range line {
+			if _, ok := countMap[square.closestNeighbour]; ok {
+				countMap[square.closestNeighbour] += 1
+			} else {
+				countMap[square.closestNeighbour] = 1
+			}
+		}
+	}
+	return countMap
+}
+
+func getFiniteAreas(grid [][]coordinate) map[int]bool {
+	infiniteMap := make(map[int]bool,0)
+	for i, line := range grid {
+		for j, square := range line {
+			if i == 0 || j == 0 || i == len(grid) -1 || j == len(grid[0]) -1 {
+				if _, ok := infiniteMap[square.closestNeighbour]; ok {
+					infiniteMap[square.closestNeighbour] = true
+				} else {
+					infiniteMap[square.closestNeighbour] = true
+				}
+			}
+		}
+	}
+	return infiniteMap
+}
+
+func getLargestFiniteArea(infiniteMap map[int]bool, populationTotalMap map[int]int) int {
+	largestFiniteArea := 0
+	for key, _ := range populationTotalMap {
+		if key != -1 {
+			if _, ok := infiniteMap[key]; ok {
+				// Do nothing
+			} else {
+				if populationTotalMap[key] > largestFiniteArea {
+					largestFiniteArea = populationTotalMap[key]
+				}
+			}
+		}
+	}
+	return largestFiniteArea
+}
+
 func main() {
 	filename := "test"
-	//filename = "input6a"
+	filename = "input6a"
 	input := read_file(filename)
 	fmt.Println(input)
 	coordinatesSlice := getCordinatesSlice(input)
@@ -667,13 +751,28 @@ func main() {
 	emptyGrid := getEmptyGrid(maxX, maxY)
 	populatedGrid := populateGrid(emptyGrid, coordinatesSlice)
 	prettyPrintGrid(populatedGrid)
-	for _, line := range populatedGrid {
-		fmt.Println(line)
-	}
+	//for _, line := range populatedGrid {
+	//	fmt.Println(line)
+	//}
 	//prettyPrintGrid(populatedGrid)
 	markedGrid := markGrid(coordinatesSlice, populatedGrid)
-	fmt.Println(markedGrid)
+	//fmt.Println(markedGrid)
 	prettyPrintGrid(markedGrid)
+
+	populationTotalMap := countPopulationTotals(markedGrid)
+	//fmt.Println(populationTotalMap)
+
+	infiniteMap := getFiniteAreas(markedGrid)
+	//fmt.Println(infiniteMap)
+
+	largestFiniteArea := getLargestFiniteArea(infiniteMap, populationTotalMap)
+	fmt.Printf("largest finite area = %d\n", largestFiniteArea)
+
+	//infinityArray := markInfiniteCoordinates(markedGrid, coordinatesSlice)
+	//fmt.Println(infinityArray)
+	//largestFiniteAreaMap := getLargestFiniteArea(infinityArray, markedGrid)
+	//fmt.Println(largestFiniteAreaMap)
+
 	//calculatedAreas := calculateAreas(markedGird, maxX, maxY)
 	//largestNonInfiniteAreaSize := getLargestNonInfiniteAreaSize(coordiantesMap)
 
