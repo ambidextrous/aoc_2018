@@ -134,8 +134,6 @@ func generateWorkers(numWorkers int) []worker {
 func getReadyToGoTasks(dependencyMap map[string][]string, completedTasks []string) []string {
 	readyToGoTasks := make([]string, 0)
 	tasksToBeCompleted := getTasksToBeCompleted(dependencyMap)
-	fmt.Println("tasksToBeCompleted:")
-	fmt.Println(tasksToBeCompleted)
 	for _, task := range tasksToBeCompleted {
 		readyToGo := false
 		if !containsString(completedTasks, task) {
@@ -227,6 +225,7 @@ func assignTasks(workers []worker, unnassignedReadyToGoTasks []string, offset in
 }
 
 func prettyPrintWorldState(workers []worker, completedTasks []string, numSeconds int) {
+	//fmt.Println("prettyPrintWorldState:")
 	output := strconv.Itoa(numSeconds) + " "
 	for _, w := range workers {
 		if len(w.currentTask) > 0 {
@@ -246,29 +245,24 @@ func getNumSecondsToComplete(dependencyMap map[string][]string, numWorkers int, 
 	fmt.Println(workers)
 	completedTasks := make([]string, 0)
 	readyToGoTasks := make([]string, 0)
-	//for len(completedTasks) < len(dependencyMap) {
-	readyToGoTasks = getReadyToGoTasks(dependencyMap, completedTasks)
-	fmt.Println("readyToGoTasks:")
-	fmt.Println(readyToGoTasks)
-	unnassignedReadyToGoTasks := filterAssignedTasks(readyToGoTasks, workers)
-	fmt.Println("unnassignedReadyToGoTasks:")
-	fmt.Println(unnassignedReadyToGoTasks)
-	sort.Strings(unnassignedReadyToGoTasks)
-	readyToGoWorkers := getReadyToGoWorkers(workers)
-	fmt.Println("readyToGoWorkers:")
-	fmt.Println(readyToGoWorkers)
-	workers, completedTasks = workOnTasks(readyToGoWorkers, completedTasks)
-	workers = assignTasks(workers, unnassignedReadyToGoTasks, offset)
-	prettyPrintWorldState(workers, completedTasks, numSecondsToComplete)
-	numSecondsToComplete++
-	fmt.Println()
-	//}
+	for {
+		readyToGoTasks = getReadyToGoTasks(dependencyMap, completedTasks)
+		unnassignedReadyToGoTasks := filterAssignedTasks(readyToGoTasks, workers)
+		sort.Strings(unnassignedReadyToGoTasks)
+		workers = assignTasks(workers, unnassignedReadyToGoTasks, offset)
+		workers, completedTasks = workOnTasks(workers, completedTasks)
+		if len(readyToGoTasks) == 0 {
+			return numSecondsToComplete
+		}
+		prettyPrintWorldState(workers, completedTasks, numSecondsToComplete)
+		numSecondsToComplete++
+	}
 	return numSecondsToComplete
 }
 
 func main() {
 	filename := "test"
-	//filename = "input7a"
+	filename = "input7a"
 	input := readFile(filename)
 	fmt.Println("input:")
 	fmt.Println(input)
@@ -286,7 +280,7 @@ func main() {
 	orderOfTasks := completeTasks(dependencyMap)
 	fmt.Println("Answer to part 1: orderOfTasks:")
 	fmt.Println(orderOfTasks)
-	numSecondsToComplete := getNumSecondsToComplete(dependencyMap, 2, 0)
-	fmt.Println("numSecondsToComplete:")
+	numSecondsToComplete := getNumSecondsToComplete(dependencyMap, 5, 60)
+	fmt.Println("Answer to part 2: numSecondsToComplete:")
 	fmt.Println(numSecondsToComplete)
 }
