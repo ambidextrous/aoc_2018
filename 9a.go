@@ -184,18 +184,27 @@ func removeMarbleAtIndex(index int, circle []int) []int {
 	return circle
 }
 
-func getHighestPlayerScore(players map[int][]int) int {
+func getHighestPlayerScore(players map[int][]int) (int, int) {
+	fmt.Printf("players: %+v\n", players)
+	highestTotalScore := 0
 	highestScore := 0
 	for key := range players {
-		totalScore := sumSlice(players[key])
-		if totalScore > highestScore {
-			highestScore = totalScore
+		totalScore := 0
+		for _, score := range players[key] {
+			totalScore += score
+			if score > highestScore {
+				highestScore = score
+			}
 		}
+		if totalScore > highestTotalScore {
+			highestTotalScore = totalScore
+		}
+
 	}
-	return highestScore
+	return highestScore, highestTotalScore
 }
 
-func playMarbleGame(numPlayers int, finalLastMarbleScore int) int {
+func playMarbleGame(numPlayers int, finalLastMarbleScore int) (int, int) {
 	REGULAR_JUMP_DIST := 2
 	SPECIAL_JUMP_DIST := 7
 	SPECIAL_DIVISOR := 23
@@ -210,7 +219,7 @@ func playMarbleGame(numPlayers int, finalLastMarbleScore int) int {
 	nextMarblePos := 0
 	currentPlayer := 0
 	//for currentMarbleScore < 27 {
-	for {
+	for currentMarbleScore < finalLastMarbleScore {
 		if roundCounter%SPECIAL_DIVISOR == 0 && roundCounter != 0 {
 			currentPlayer++
 			if currentPlayer > numPlayers {
@@ -278,6 +287,11 @@ type node struct {
 
 func jumpBackDist(currentNode *node, dist int) (node, int) {
 	for i := 0; i < dist; i++ {
+		if currentNode.name == 0 {
+			fmt.Println()
+			fmt.Println("WRAPPING AROUND!!")
+			fmt.Println()
+		}
 		currentNode = currentNode.prev
 	}
 	replacementNode := node{name: currentNode.next.name, prev: currentNode.prev, prevName: currentNode.prevName, next: currentNode.next.next, nextName: currentNode.next.nextName}
@@ -298,7 +312,7 @@ func removeNode(currentNode *node) {
 	currentNode = currentNode.next
 }
 
-func playLinkedGame(numPlayers int, finalLastMarbleScore int) int {
+func playLinkedGame(numPlayers int, finalLastMarbleScore int) (int, int) {
 	players := make(map[int][]int)
 	for i := 1; i <= numPlayers; i++ {
 		players[i] = make([]int, 0)
@@ -313,14 +327,24 @@ func playLinkedGame(numPlayers int, finalLastMarbleScore int) int {
 	zeroNode.nextName = 2
 	oneNode.prev = &twoNode
 	oneNode.prevName = 2
-	//fmt.Printf("%+v\n", zeroNode)
-	//fmt.Printf("%+v\n", oneNode)
-	//fmt.Printf("%+v\n", twoNode)
+	fmt.Printf("%+v\n", zeroNode)
+	fmt.Printf("%+v\n", oneNode)
+	fmt.Printf("%+v\n", twoNode)
 	currentNode := twoNode
 	roundCounter := 3
 	playerCounter := 3
 	for roundCounter < finalLastMarbleScore {
-		if roundCounter%23 == 0 && roundCounter != 0 {
+		nodeString := ""
+		startingNode := &currentNode
+		for i := 0; i < roundCounter+4; i++ {
+			nextNode := startingNode.next
+			nodeString += strconv.Itoa(nextNode.name) + ", "
+			startingNode = nextNode
+		}
+		nodeString += "\n"
+		fmt.Println("nodeString:")
+		fmt.Println(nodeString)
+		if roundCounter%23 == 0 {
 			newScore := 0
 			currentNode, newScore = jumpBackDist(&currentNode, 7)
 			//fmt.Printf("!!!currentNode: %+v\n", currentNode)
@@ -334,6 +358,7 @@ func playLinkedGame(numPlayers int, finalLastMarbleScore int) int {
 			//	return getHighestPlayerScore(players)
 			//}
 			removeNode(&currentNode)
+
 		} else {
 			followingNode := currentNode.next
 			newNode := node{name: roundCounter, next: followingNode.next, nextName: followingNode.nextName, prev: followingNode, prevName: followingNode.name}
@@ -345,7 +370,9 @@ func playLinkedGame(numPlayers int, finalLastMarbleScore int) int {
 		}
 		//fmt.Printf("roundCounter: %d\n", roundCounter)
 		//fmt.Printf("playerCounter: %d\n", playerCounter)
+
 		//fmt.Printf("currentNode: %+v\n", currentNode)
+		fmt.Printf("prevNode:%d; currentNode:%d; nextNode:%d\n", currentNode.prev.name, currentNode.name, currentNode.next.name)
 		//fmt.Println()
 		roundCounter++
 		playerCounter++
@@ -356,21 +383,39 @@ func playLinkedGame(numPlayers int, finalLastMarbleScore int) int {
 			fmt.Printf("roundCounter = %d\n", roundCounter)
 		}
 	}
-	return 0
+	for i, player := range players {
+		fmt.Printf("Player %d:\n", i)
+		fmt.Println(player)
+	}
+	return getHighestPlayerScore(players)
 }
 
 func main() {
-	highestPlayerScore := playLinkedGame(9, 25)
-	//highestPlayerScore = playLinkedGame(10, 1618)
+	//highestPlayerScore, highestTotalScore := playLinkedGame(10, 1618)
+	highestPlayerScore, highestTotalScore := playLinkedGame(9, 25)
+	fmt.Println()
 	fmt.Println("highestPlayerScore:")
 	fmt.Println(highestPlayerScore)
+	fmt.Println("highestTotalScore:")
+	fmt.Println(highestTotalScore)
+
+	//highestPlayerScore := playLinkedGame(10, 1618)
+	//highestPlayerScore := playLinkedGame(493, 71863)
+	//fmt.Println("highestPlayerScore:")
+	//fmt.Println(highestPlayerScore)
 	//filename := "test"
 	//filename = "input8a"
 	//input := readFile(filename)
 	//input = strings.Replace(input, "\n", "", -1)
 	//fmt.Println("input:")
 	//fmt.Println(input)
-	//highestScore := playMarbleGame(17, 1104)
+
+	//highestPlayerScore, highestTotalScore := playMarbleGame(13, 8001)
+	//fmt.Println("highestPlayerScore:")
+	//fmt.Println(highestPlayerScore)
+	//fmt.Println("highestTotalScore:")
+	//fmt.Println(highestTotalScore)
+
 	//highestScore := playMarbleGame(10, 1618)
 	//fmt.Println("highestScore:")
 	//fmt.Println(highestScore)
